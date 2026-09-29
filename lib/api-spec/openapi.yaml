@@ -1,0 +1,492 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Sports anti-doping monitoring API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+  - name: dashboard
+  - name: tests
+  - name: samples
+  - name: results
+  - name: violations
+  - name: notifications
+  - name: reports
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with a development account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated user and session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401":
+          description: Invalid credentials
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get role-aware monitoring summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /tests:
+    get:
+      operationId: listTests
+      tags: [tests]
+      summary: List authorized doping tests
+      parameters:
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Tests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DopingTest"
+    post:
+      operationId: createTest
+      tags: [tests]
+      summary: Schedule a doping test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestInput"
+      responses:
+        "201":
+          description: Scheduled test
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DopingTest"
+  /tests/{id}:
+    get:
+      operationId: getTest
+      tags: [tests]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Test detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DopingTest"
+    patch:
+      operationId: updateTest
+      tags: [tests]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestUpdate"
+      responses:
+        "200":
+          description: Updated test
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DopingTest"
+  /samples:
+    get:
+      operationId: listSamples
+      tags: [samples]
+      summary: List samples within the user's scope
+      responses:
+        "200":
+          description: Samples
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sample"
+  /samples/{id}/transition:
+    post:
+      operationId: transitionSample
+      tags: [samples]
+      summary: Move a sample through chain of custody
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SampleTransitionInput"
+      responses:
+        "200":
+          description: Updated sample
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sample"
+  /results:
+    get:
+      operationId: listResults
+      tags: [results]
+      responses:
+        "200":
+          description: Laboratory results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LabResult"
+    post:
+      operationId: createResult
+      tags: [results]
+      summary: Record a result and process downstream workflows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResultInput"
+      responses:
+        "201":
+          description: Recorded result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabResult"
+  /violations:
+    get:
+      operationId: listViolations
+      tags: [violations]
+      responses:
+        "200":
+          description: Violations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Violation"
+  /violations/{id}:
+    patch:
+      operationId: updateViolation
+      tags: [violations]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ViolationUpdate"
+      responses:
+        "200":
+          description: Updated violation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      responses:
+        "200":
+          description: Updated notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /reports/summary:
+    get:
+      operationId: getReportSummary
+      tags: [reports]
+      responses:
+        "200":
+          description: Reporting summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSummary"
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Search:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+    Status:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    User:
+      type: object
+      required: [id, name, email, role, initials]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string }
+        initials: { type: string }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+    AuthSession:
+      type: object
+      required: [user, accessToken]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        accessToken: { type: string }
+    DashboardSummary:
+      type: object
+      required: [metrics, activity, statusBreakdown]
+      properties:
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/Metric"
+        activity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+        statusBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/Breakdown"
+    Metric:
+      type: object
+      required: [label, value, trend, tone]
+      properties:
+        label: { type: string }
+        value: { type: string }
+        trend: { type: string }
+        tone: { type: string }
+    Activity:
+      type: object
+      required: [id, title, detail, time, tone]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        time: { type: string }
+        tone: { type: string }
+    Breakdown:
+      type: object
+      required: [label, value, color]
+      properties:
+        label: { type: string }
+        value: { type: integer }
+        color: { type: string }
+    DopingTest:
+      type: object
+      required: [id, testNumber, athlete, sport, location, scheduledDate, testType, status, officer]
+      properties:
+        id: { type: string }
+        testNumber: { type: string }
+        athlete: { type: string }
+        athleteId: { type: ["string", "null"] }
+        sport: { type: string }
+        location: { type: string }
+        scheduledDate: { type: string }
+        testType: { type: string }
+        status: { type: string }
+        officer: { type: string }
+        result: { type: ["string", "null"] }
+    TestInput:
+      type: object
+      required: [athlete, scheduledDate, location, testType]
+      properties:
+        athlete: { type: string }
+        scheduledDate: { type: string }
+        location: { type: string }
+        testType: { type: string }
+    TestUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        notes: { type: string }
+    Sample:
+      type: object
+      required: [id, sampleNumber, testNumber, athlete, type, collectedAt, status, custody]
+      properties:
+        id: { type: string }
+        sampleNumber: { type: string }
+        testNumber: { type: string }
+        athlete: { type: string }
+        type: { type: string }
+        collectedAt: { type: string }
+        status: { type: string }
+        custody: { type: string }
+    SampleTransitionInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+        notes: { type: string }
+    LabResult:
+      type: object
+      required: [id, sampleNumber, athlete, lab, status, method, analyzedAt]
+      properties:
+        id: { type: string }
+        sampleNumber: { type: string }
+        athlete: { type: string }
+        lab: { type: string }
+        status: { type: string }
+        method: { type: string }
+        analyzedAt: { type: string }
+        findings: { type: string }
+    ResultInput:
+      type: object
+      required: [sampleId, status, method, findings]
+      properties:
+        sampleId: { type: string }
+        status: { type: string }
+        method: { type: string }
+        findings: { type: string }
+    Violation:
+      type: object
+      required: [id, violationNumber, athlete, substance, status, openedAt, priority]
+      properties:
+        id: { type: string }
+        violationNumber: { type: string }
+        athlete: { type: string }
+        testNumber: { type: string }
+        substance: { type: string }
+        status: { type: string }
+        openedAt: { type: string }
+        priority: { type: string }
+        action: { type: ["string", "null"] }
+    ViolationUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        action: { type: string }
+        remarks: { type: string }
+    Notification:
+      type: object
+      required: [id, title, message, type, createdAt, isRead]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        message: { type: string }
+        type: { type: string }
+        createdAt: { type: string }
+        isRead: { type: boolean }
+    ReportSummary:
+      type: object
+      required: [monthly, resultMix, labPerformance]
+      properties:
+        monthly:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyReport"
+        resultMix:
+          type: array
+          items:
+            $ref: "#/components/schemas/Breakdown"
+        labPerformance:
+          type: array
+          items:
+            $ref: "#/components/schemas/LabPerformance"
+    MonthlyReport:
+      type: object
+      required: [month, tests, positive, negative]
+      properties:
+        month: { type: string }
+        tests: { type: integer }
+        positive: { type: integer }
+        negative: { type: integer }
+    LabPerformance:
+      type: object
+      required: [name, samples, turnaround]
+      properties:
+        name: { type: string }
+        samples: { type: integer }
+        turnaround: { type: string }
+
